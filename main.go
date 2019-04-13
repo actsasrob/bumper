@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+        "net/http/httputil"
 	"os"
 	"strings"
 	"sync"
@@ -30,7 +31,7 @@ type BumperProxy struct {
 	timeout    int64
 	proxy      string
 	skipverify bool
-	addorig    bool
+	addorig    bool 
 }
 
 type Proxy struct {
@@ -260,6 +261,12 @@ func handleClient(origconn net.Conn, bumper *BumperProxy) {
 		}
 
 		log.Printf("(%s) -> %s %s\n", cli, req.Method, req.RequestURI)
+// Save a copy of this request for debugging.
+requestDump, err := httputil.DumpRequest(req, true)
+if err != nil {
+  fmt.Println(err)
+}
+fmt.Println(string(requestDump))
 
 		if req.Method == "CONNECT" {
 			if !strings.Contains(req.Host, ":") {
@@ -382,10 +389,12 @@ var opts struct {
 	CaCert      string `short:"c" long:"cacert" value-name:"<file>" description:"CA certificate file." required:"true"`
 	CaKey       string `short:"k" long:"cakey" value-name:"<file>" description:"CA private key file." required:"true"`
 	Proxy       string `short:"p" long:"proxy" value-name:"<host:port>" description:"HTTP parent proxy to use for all requests (both HTTP and HTTPS)."`
-	SkipVerify  bool   `short:"n" long:"skipverify" description:"If set, BumperProxy will not verify the certificate of HTTPS websites." default:"false"`
+	//SkipVerify  bool   `short:"n" long:"skipverify" description:"If set, BumperProxy will not verify the certificate of HTTPS websites." default:"false"`
+	SkipVerify  bool   `short:"n" long:"skipverify" description:"If set, BumperProxy will not verify the certificate of HTTPS websites."`
 	Listen      string `short:"l" long:"listen" value-name:"<host:port>" description:"Host and port where Bumperproxy will be listening." default:"localhost:9718"`
 	Timeout     int64  `short:"t" long:"timeout" value-name:"<seconds>" description:"Timeout for client connections." default:"120"`
-	AddXOrigUri bool   `short:"x" long:"addxoriguri" description:"If set, BumperProxy will add an X-Orig-Uri header with the original URI to requests." default:"false"`
+	//AddXOrigUri bool   `short:"x" long:"addxoriguri" description:"If set, BumperProxy will add an X-Orig-Uri header with the original URI to requests." default:"false"`
+	AddXOrigUri bool   `short:"x" long:"addxoriguri" description:"If set, BumperProxy will add an X-Orig-Uri header with the original URI to requests."`
 	Verbose     []bool `short:"v" long:"verbose" description:"Enable verbose debugging."`
 	Version     bool   `short:"V" long:"version" description:"Show version."`
 }
@@ -416,7 +425,8 @@ func main() {
 
 	bumper.proxy = opts.Proxy
 	bumper.addorig = opts.AddXOrigUri
-	bumper.skipverify = opts.SkipVerify
+	//bumper.skipverify = opts.SkipVerify
+	bumper.skipverify = false 
 	bumper.timeout = opts.Timeout
 
 	// Load CA certificate and key.
