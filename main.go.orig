@@ -1,16 +1,9 @@
 package main
 
 import (
-        "github.com/aws/aws-sdk-go/aws"
-        "github.com/aws/aws-sdk-go/aws/credentials"
-        "github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-        "github.com/aws/aws-sdk-go/aws/ec2metadata"
-        "github.com/aws/aws-sdk-go/aws/signer/v4"
-        "github.com/aws/aws-sdk-go/aws/session"
 	"bufio"
 	"bytes"
 	"crypto/tls"
-        //"encoding/json"
 	"fmt"
 	"github.com/jessevdk/go-flags"
 	"io"
@@ -19,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-        "net/http/httputil"
 	"os"
 	"strings"
 	"sync"
@@ -38,9 +30,7 @@ type BumperProxy struct {
 	timeout    int64
 	proxy      string
 	skipverify bool
-	addorig    bool 
-        kmskeyid   string
-        awsregion  string
+	addorig    bool
 }
 
 type Proxy struct {
@@ -51,11 +41,6 @@ type Proxy struct {
 	isconnect bool
 }
 
-var awsconfig *aws.Config
-var sess *session.Session
-var provider *ec2rolecreds.EC2RoleProvider
-var creds *credentials.Credentials
-var kmskeyid string
 //
 // Main listener loop.
 //
@@ -78,8 +63,6 @@ func loop(addr string, bumper *BumperProxy) {
 		go handleClient(conn, bumper)
 	}
 }
-
-func epochTime() time.Time { return time.Unix(0, 0) }
 
 func doStream(r *bufio.Reader, w io.Writer) <-chan error {
 	errCh := make(chan (error))
@@ -278,70 +261,6 @@ func handleClient(origconn net.Conn, bumper *BumperProxy) {
 
 		log.Printf("(%s) -> %s %s\n", cli, req.Method, req.RequestURI)
 
-                // add the X-Amz-Server-Side-Encryption headers to Put requests
-                if req.Method == "PUT" { 
-			// The call below does not work as per the documentation. See github issue on next line
-			//creds := credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{})
-			//https://github.com/aws/aws-sdk-go/issues/452
-
-			// Use alternate path get get EC2 instance role credentials
-			// Create a Session with a custom region
-			if awsconfig == nil {
-				awsconfig = &aws.Config{
-        			HTTPClient: &http.Client{Timeout: 10 * time.Second},
-        			Region: aws.String(bumper.awsregion),
-				}
-			}
-
-			if sess == nil {
-				sess = session.Must(session.NewSession(awsconfig))
-			}
-
-			if provider == nil {
-				provider = &ec2rolecreds.EC2RoleProvider{
-    					// Pass in a custom timeout to be used when requesting
-    					// IAM EC2 Role credentials.
-    					Client: ec2metadata.New(sess, awsconfig),
-
-    					// Do not use early expiry of credentials. If a non zero value is
-    					// specified the credentials will be expired early
-    					ExpiryWindow: 0,
-					}
-			}
-
-			if creds == nil {
-                        	creds = credentials.NewCredentials(provider)
-			}
-
-                        //creds.Expire()
-                        //credsValue, err := creds.Get()
-	                //if err != nil {
-		        //   log.Printf("error retrieving aws credentials, got %v", err)
-		        //   SendResp(cli, cliwriter, 500, err.Error(), false)
-		        //   return
-                        //}
-                        //fmt.Println("info: aws credentials %s", credsValue)
-	                signer := v4.NewSigner(creds, func(s *v4.Signer) {
-		                     s.DisableURIPathEscaping = true
-                                     s.DisableRequestBodyOverwrite = true
-                                  })
-                        req.Header.Add("X-Amz-Server-Side-Encryption", "aws:kms")
-                        req.Header.Add("X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id", bumper.kmskeyid)
-                        _, err = signer.Sign(req, nil, "s3", bumper.awsregion, epochTime())
-	                if err != nil {
-		           log.Printf("aws v4 signer expect no error, got %v", err)
-		           SendResp(cli, cliwriter, 500, err.Error(), false)
-		           return
-                        }
-                }
-
-                // dump request for debugging purposes
-                requestDump, err := httputil.DumpRequest(req, true)
-                if err != nil {
-                        fmt.Println(err)
-                }
-                fmt.Println(string(requestDump))
-
 		if req.Method == "CONNECT" {
 			if !strings.Contains(req.Host, ":") {
 				SendResp(cli, cliwriter, 400,
@@ -459,18 +378,14 @@ func handleClient(origconn net.Conn, bumper *BumperProxy) {
 // Command line options.
 //
 var opts struct {
-	AwsRegion     string `short:"r" long:"awsregion" value-name:"<awsregion>" description:"AWS Region" `
 	CertDir     string `short:"d" long:"certdir" value-name:"<directory>" description:"Directory where generated certificates are stored." required:"true"`
 	CaCert      string `short:"c" long:"cacert" value-name:"<file>" description:"CA certificate file." required:"true"`
 	CaKey       string `short:"k" long:"cakey" value-name:"<file>" description:"CA private key file." required:"true"`
-	KmsKeyId       string `short:"i" long:"kmskeyid" value-name:"<arn:aws:kms:region:account:key>" description:"The KMS customer master encryption key ID" required:"true"`
 	Proxy       string `short:"p" long:"proxy" value-name:"<host:port>" description:"HTTP parent proxy to use for all requests (both HTTP and HTTPS)."`
-	//SkipVerify  bool   `short:"n" long:"skipverify" description:"If set, BumperProxy will not verify the certificate of HTTPS websites." default:"false"`
-	SkipVerify  bool   `short:"n" long:"skipverify" description:"If set, BumperProxy will not verify the certificate of HTTPS websites."`
+	SkipVerify  bool   `short:"n" long:"skipverify" description:"If set, BumperProxy will not verify the certificate of HTTPS websites." default:"false"`
 	Listen      string `short:"l" long:"listen" value-name:"<host:port>" description:"Host and port where Bumperproxy will be listening." default:"localhost:9718"`
 	Timeout     int64  `short:"t" long:"timeout" value-name:"<seconds>" description:"Timeout for client connections." default:"120"`
-	//AddXOrigUri bool   `short:"x" long:"addxoriguri" description:"If set, BumperProxy will add an X-Orig-Uri header with the original URI to requests." default:"false"`
-	AddXOrigUri bool   `short:"x" long:"addxoriguri" description:"If set, BumperProxy will add an X-Orig-Uri header with the original URI to requests."`
+	AddXOrigUri bool   `short:"x" long:"addxoriguri" description:"If set, BumperProxy will add an X-Orig-Uri header with the original URI to requests." default:"false"`
 	Verbose     []bool `short:"v" long:"verbose" description:"Enable verbose debugging."`
 	Version     bool   `short:"V" long:"version" description:"Show version."`
 }
@@ -502,13 +417,7 @@ func main() {
 	bumper.proxy = opts.Proxy
 	bumper.addorig = opts.AddXOrigUri
 	bumper.skipverify = opts.SkipVerify
-	//bumper.skipverify = false 
 	bumper.timeout = opts.Timeout
-        bumper.kmskeyid = opts.KmsKeyId
-        bumper.awsregion = "us-east-1" 
-        if opts.AwsRegion != "" {
-        	bumper.awsregion = opts.AwsRegion
-	} 
 
 	// Load CA certificate and key.
 	cacert, err := ReadCert(opts.CaCert, opts.CaKey)
