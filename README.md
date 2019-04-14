@@ -12,7 +12,7 @@ The main use case is to make any caching proxy be able to cache HTTPS requests v
 
 Another use case is if you want to study the requests going to a particular website from your browser. Since Bumper terminates the SSL/TLS connection browsers start via HTTP CONNECT, all requests and responses wrapped inside the CONNECT tunnel will be observable. Bumper will log each request/response to standard output. In this case, you don't need a parent proxy, Bumper will take care of performing requests.
 
-Bumper has been repurporsed here to provide a "trusted" man-in-the-middle proxy that inserts two HTTP request headers (X-Amz-Server-Side-Encryption, and X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id) and then resign the HTTP request using the AWS v4 signature algorithm. Handy to proxy requests for software that writes to S3 but doesn't provide native support for adding X-Amz-Server-Side-Encryption headers to specify server side encryption is required using a customer managed master encryption key (CMK).
+Bumper has been repurposed here to provide a "trusted" man-in-the-middle proxy that inserts two HTTP request headers (X-Amz-Server-Side-Encryption, and X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id) and then resigns the HTTP request using the AWS v4 signature algorithm. Handy to proxy requests for software that writes to S3 but doesn't provide native support for adding X-Amz-Server-Side-Encryption headers to specify server side encryption is required using a customer managed master encryption key (CMK).
 
 Options
 -------
@@ -32,7 +32,7 @@ Examples
 
 Using Bumper to log requests, even when HTTPS is used:
 
-    <Assumping source code lives in $HOME/src/github.com/actsasrob/bumper>
+    <Assuming source code lives in $HOME/go/src/github.com/actsasrob/bumper>
     $ export GOPATH=$HOME/go
     $ cd $GOPATH
     $ go run github.com/actsasrob/bumper -v -d /tmp/certs/ -c cybervillains.crt -k cybervillains.key -x --kmskeyid "arn for your KMS encryption key ID" --awsregion "us-east-1"
