@@ -11,7 +11,7 @@ The main use case is to make any caching proxy be able to cache HTTPS requests v
 
 Another use case is if you want to study the requests going to a particular website from your browser. Since Bumper terminates the SSL/TLS connection browsers start via HTTP CONNECT, all requests and responses wrapped inside the CONNECT tunnel will be observable. Bumper will log each request/response to standard output. In this case, you don't need a parent proxy, Bumper will take care of performing requests.
 
-[github.com/actasrob Bumper](https://github.com/actasrob/bumper) has been repurposed here to provide a "trusted" man-in-the-middle proxy that inserts two HTTP request headers (X-Amz-Server-Side-Encryption, and X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id) and then resigns the HTTP request using the AWS v4 signature algorithm. Handy to proxy requests for software that writes to S3 but doesn't provide native support for adding X-Amz-Server-Side-Encryption headers to specify server side encryption is required using a customer managed master encryption key (CMK).
+[github.com/actasrob Bumper](https://github.com/actsasrob/bumper) has been repurposed here to provide a "trusted" man-in-the-middle proxy that inserts two HTTP request headers (X-Amz-Server-Side-Encryption, and X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id) and then resigns the HTTP request using the AWS v4 signature algorithm. Handy to proxy requests for software that writes to S3 but doesn't provide native support for adding X-Amz-Server-Side-Encryption headers to specify server side encryption is required using a customer managed master encryption key (CMK).
 
 Options
 -------
@@ -29,7 +29,7 @@ Options
 Examples
 --------
 
-Using Bumper to log requests, even when HTTPS is used:
+Using Bumper to proxy S3 requests and add X-Amz-Server-Side-Encryption HTTP request headers, even when HTTPS is used:
 
     <Assuming source code lives in $HOME/go/src/github.com/actsasrob/bumper>
     $ export GOPATH=$HOME/go
