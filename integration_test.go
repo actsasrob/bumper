@@ -65,7 +65,7 @@ func startBumper(t *testing.T, addr string, parent string) net.Listener {
 			t.Error("Accept: ", err)
 		}
 
-		bumper, err := createConfig("cybervillains.crt", "cybervillains.key",
+		bumper, err := createConfig("cacert.pem", "cakey.pem",
 			parent)
 		if err != nil {
 			t.Error("createConfig: ", err)
@@ -147,8 +147,8 @@ func doTestHttps(t *testing.T, parent string) {
 	resp := proxyVia(t, "https://"+addr, bumperaddr)
 	issuer := resp.TLS.PeerCertificates[0].Issuer
 	if issuer.Country[0] != "US" ||
-		issuer.Organization[0] != "CyberVillians.com" ||
-		issuer.OrganizationalUnit[0] != "CyberVillians Certification Authority" {
+		issuer.Organization[0] != "CA" ||
+		issuer.OrganizationalUnit[0] != "S3PROXY" {
 		t.Error("Invalid issuer in peer certificate: ", issuer)
 	}
 }

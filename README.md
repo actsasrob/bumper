@@ -1,18 +1,17 @@
 Bumper
 ======
 
-[![Build Status](https://travis-ci.org/ldx/bumper.svg?branch=master)](https://travis-ci.org/ldx/bumper)
 
 Introduction
 ------------
 
-Bumper is a simple HTTP proxy with SSL/TLS man-in-the-middle capabilities.
+[github.com/ldx Bumper](https://github.com/ldx/bumper) is a simple HTTP proxy with SSL/TLS man-in-the-middle capabilities.
 
 The main use case is to make any caching proxy be able to cache HTTPS requests via terminating the SSL/TLS connection in Bumper, and sending the plain non-encrypted request to a parent proxy. Bumper will generate new SSL certificates for websites on the fly when the first HTTPS request for that URL is received. Since generating certificates is a CPU-heavy task, certificates will be cached in a directory, and when Bumper is restarted, it will read in certificate/private key pairs from this directory.
 
 Another use case is if you want to study the requests going to a particular website from your browser. Since Bumper terminates the SSL/TLS connection browsers start via HTTP CONNECT, all requests and responses wrapped inside the CONNECT tunnel will be observable. Bumper will log each request/response to standard output. In this case, you don't need a parent proxy, Bumper will take care of performing requests.
 
-Bumper has been repurposed here to provide a "trusted" man-in-the-middle proxy that inserts two HTTP request headers (X-Amz-Server-Side-Encryption, and X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id) and then resigns the HTTP request using the AWS v4 signature algorithm. Handy to proxy requests for software that writes to S3 but doesn't provide native support for adding X-Amz-Server-Side-Encryption headers to specify server side encryption is required using a customer managed master encryption key (CMK).
+[github.com/actasrob Bumper](https://github.com/actasrob/bumper) has been repurposed here to provide a "trusted" man-in-the-middle proxy that inserts two HTTP request headers (X-Amz-Server-Side-Encryption, and X-Amz-Server-Side-Encryption-Aws-Kms-Key-Id) and then resigns the HTTP request using the AWS v4 signature algorithm. Handy to proxy requests for software that writes to S3 but doesn't provide native support for adding X-Amz-Server-Side-Encryption headers to specify server side encryption is required using a customer managed master encryption key (CMK).
 
 Options
 -------
@@ -35,13 +34,13 @@ Using Bumper to log requests, even when HTTPS is used:
     <Assuming source code lives in $HOME/go/src/github.com/actsasrob/bumper>
     $ export GOPATH=$HOME/go
     $ cd $GOPATH
-    $ go run github.com/actsasrob/bumper -v -d /tmp/certs/ -c cybervillains.crt -k cybervillains.key -x --kmskeyid "arn for your KMS encryption key ID" --awsregion "us-east-1"
+    $ go run github.com/actsasrob/bumper -v -d /tmp/certs/ -c src/github.com/actsasrob/bumper/cacert.pem -k src/github.com/actsasrob/bumper/cakey.pem -x --kmskeyid "arn for your KMS encryption key ID" --awsregion "us-east-1"
 
-The files `cybervillains.crt` and `cybervillains.key` are a self-signed CA private key and certificate. You may want to import `cybervillains.crt` into your browser to prevent security warnings about untrusted sites and certificates.
+The files `cacert.pem` and `cakey.pem` are a self-signed CA private key and certificate. You may want to import `cacert.pem` into your browser to prevent security warnings about untrusted sites and certificates.
 
 Forward all requests to an upstream proxy, adding an X-Orig-Uri header with the original URL in the request and disabling website certificate verification:
 
-    $ ./bumper -d /tmp/certs/ -c cybervillains.crt -k cybervillains.key -x -p localhost:6081 -n --kmskeyid "arn for your KMS encryption key ID"
+    $ ./bumper -d /tmp/certs/ -c src/github.com/actsasrob/bumper/cacert.pem -k src/github.com/actsasrob/bumper/cakey.pem -x -p localhost:6081 -n --kmskeyid "arn for your KMS encryption key ID"
 
 Credits
 -------

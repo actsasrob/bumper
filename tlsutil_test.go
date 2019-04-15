@@ -122,7 +122,7 @@ func TestReadCertificates(t *testing.T) {
 			len(bumper.certs), len(names)))
 	}
 
-	cacert, err := ReadCert("./cybervillains.crt", "./cybervillains.key")
+	cacert, err := ReadCert("./cacert.pem", "./cakey.pem")
 	if err != nil {
 		t.Error(err)
 	}
@@ -161,7 +161,7 @@ func TestReadCertificates(t *testing.T) {
 func TestReadCert(t *testing.T) {
 	log.SetOutput(noLog{})
 
-	_, err := ReadCert("./cybervillains.crt", "./cybervillains.key")
+	_, err := ReadCert("./cacert.pem", "./cakey.pem")
 	if err != nil {
 		t.Error(err)
 	}
@@ -178,7 +178,7 @@ func createCerts(bumper *BumperProxy, names []string) (err error) {
 }
 
 func newBumper(certdir string) (bumper *BumperProxy, err error) {
-	cacert, err := ReadCert("./cybervillains.crt", "./cybervillains.key")
+	cacert, err := ReadCert("./cacert.pem", "./cakey.pem")
 	if err != nil {
 		return nil, err
 	}
