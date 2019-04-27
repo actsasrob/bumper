@@ -474,7 +474,7 @@ var opts struct {
 	Timeout     int64  `short:"t" long:"timeout" value-name:"<seconds>" description:"Timeout for client connections." default:"120"`
 	//AddXOrigUri bool   `short:"x" long:"addxoriguri" description:"If set, BumperProxy will add an X-Orig-Uri header with the original URI to requests." default:"false"`
 	AddXOrigUri bool   `short:"x" long:"addxoriguri" description:"If set, BumperProxy will add an X-Orig-Uri header with the original URI to requests."`
-	Verbose     []bool `short:"v" long:"verbose" description:"Enable verbose debugging."`
+	Verbose     bool `short:"v" long:"verbose" description:"Enable verbose debugging."`
 	Version     bool   `short:"V" long:"version" description:"Show version."`
 }
 
