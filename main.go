@@ -41,6 +41,7 @@ type BumperProxy struct {
 	addorig    bool 
         kmskeyid   string
         awsregion  string
+	verbose	   bool
 }
 
 type Proxy struct {
@@ -336,11 +337,13 @@ func handleClient(origconn net.Conn, bumper *BumperProxy) {
                 }
 
                 // dump request for debugging purposes
-                requestDump, err := httputil.DumpRequest(req, true)
-                if err != nil {
-                        fmt.Println(err)
+		if bumper.verbose {
+                	requestDump, err := httputil.DumpRequest(req, true)
+                	if err != nil {
+                        	fmt.Println(err)
+                	}
+                	fmt.Println(string(requestDump))
                 }
-                fmt.Println(string(requestDump))
 
 		if req.Method == "CONNECT" {
 			if !strings.Contains(req.Host, ":") {
@@ -503,6 +506,7 @@ func main() {
 	bumper.addorig = opts.AddXOrigUri
 	bumper.skipverify = opts.SkipVerify
 	//bumper.skipverify = false 
+	bumper.verbose = opts.Verbose
 	bumper.timeout = opts.Timeout
         bumper.kmskeyid = opts.KmsKeyId
         bumper.awsregion = "us-east-1" 
