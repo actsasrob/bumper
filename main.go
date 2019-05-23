@@ -220,12 +220,29 @@ func newTransport(proxy string, skipverify bool) (*http.Transport, error) {
 		proxyurl = http.ProxyURL(url)
 	}
 
-	tr := &http.Transport{
-		Proxy: proxyurl,
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: skipverify,
-		},
-	}
+	//tr := &http.Transport{
+	//	Proxy: proxyurl,
+	//	TLSClientConfig: &tls.Config{
+	//		InsecureSkipVerify: skipverify,
+	//	},
+	//}
+        tr = &http.Transport{
+                Proxy: proxyurl,
+                DisableKeepAlives: false,
+                DialContext: (&net.Dialer{
+                   Timeout: 30 * time.Second,
+                   KeepAlive: 30 * time.Second,
+                   DualStack: true,
+                }).DialContext,
+                TLSClientConfig: &tls.Config{
+                   InsecureSkipVerify: skipverify,
+                   // InsecureSkipVerify: true,
+                }
+                MaxIdleConns: 100
+                IdleConnTimeout: 90 * time.Second,
+                TLSHandshakeTimeout: 10 * time.Second,
+                ExpectContinueTimeout: 1 * time.Second,
+             }
 
 	return tr, nil
 }
@@ -280,7 +297,8 @@ func handleClient(origconn net.Conn, bumper *BumperProxy) {
 		log.Printf("(%s) -> %s %s\n", cli, req.Method, req.RequestURI)
 
                 // add the X-Amz-Server-Side-Encryption headers to Put requests
-                if req.Method == "PUT" { 
+		if (req.Method == "PUT" && !strings.Contains(req.RequestURI, "partNumber")) ||
+		   (req.Method == "POST" && strings.HasSuffix(req.RequestURI, "uploads")) {
 			// The call below does not work as per the documentation. See github issue on next line
 			//creds := credentials.NewCredentials(&ec2rolecreds.EC2RoleProvider{})
 			//https://github.com/aws/aws-sdk-go/issues/452
